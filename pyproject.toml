@@ -1,0 +1,22 @@
+[project]
+name = "langchain-projects"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain>=1.4.2",
+    "langchain-google-genai>=4.4.0",
+    "langchain-tavily>=0.2.18",
+    "langsmith>=0.14.1",
+    "python-dotenv>=1.2.3",
+    "tavily-python>=0.8.4",
+    "truststore>=0.10.4",
+]
+
+[project.scripts]
+langchain-projects = "langchain_projects:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
