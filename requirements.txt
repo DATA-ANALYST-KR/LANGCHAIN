@@ -1,0 +1,9 @@
+python-dotenv
+truststore
+pydantic
+langchain
+langchain-google-genai
+langsmith
+tavily-python
+langchain-tavily
+google-genai

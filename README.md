@@ -1,117 +1,826 @@
-# Python Environment & uv Setup Guide
+# LangChain Course: Gemini, Tavily, LangSmith, and Agent Internals
 
-A complete reference for installing `uv` globally, creating isolated Python virtual environments (`venv`), managing project configuration files (`pyproject.toml` and `uv.lock`), and configuring VS Code for LangChain projects.
+A hands-on learning project for understanding LangChain applications from high-level chains and ready-made agents down to manual agent loops, raw Gemini function calling, and text-based ReAct prompting.
 
-## 1. One-Time Global uv Installation
+The repository uses **Google Gemini** as the language model, **Tavily** for web search, and **LangSmith** for tracing and debugging.
 
-Installing `uv` as a standalone executable allows you to use it across all projects in Command Prompt (`cmd`) or PowerShell without activating Anaconda or reinstalling `uv` inside every virtual environment.
+---
 
-Run the standalone installer in Command Prompt (`cmd`) or PowerShell:
+## Learning Path
 
-    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+The scripts follow a deliberate progression:
 
-This installs `uv.exe`, `uvx.exe`, and `uvw.exe` into `C:\Users\kumar\.local\bin`.
+```text
+Environment check
+    -> Simple prompt chain
+    -> Agent with a custom Tavily tool
+    -> Agent with the built-in Tavily tool
+    -> Structured output with Pydantic
+    -> Manual LangChain agent loop
+    -> Raw Gemini function calling
+    -> Manual ReAct agent
+```
 
-Restart your terminal or VS Code so it loads the updated `PATH`, or add it to your current session manually:
+Recommended script names:
 
-    :: For Command Prompt (cmd)
-    set Path=C:\Users\kumar\.local\bin;%Path%
+```text
+0_environment_check.py
+1_simple_prompt_chain.py
+2_custom_tavily_search_agent.py
+3_builtin_tavily_search_agent.py
+4_structured_agent_output.py
+5_manual_langchain_agent_loop.py
+6_raw_gemini_function_calling.py
+7_manual_react_agent.py
+```
 
-    # For PowerShell
-    \(env:Path = "C:\Users\kumar\.local\bin;\)env:Path"
+---
 
-Verify the installation:
+## What Each Script Demonstrates
 
-    uv --version
+### `0_environment_check.py`
 
-## 2. Understanding uv Workflows
+Checks that Python and the project virtual environment are working. This script should not call Gemini, Tavily, or LangSmith.
 
-`uv` supports two workflows depending on whether you only want a `venv` folder or full project dependency tracking:
+Suggested checks:
 
-| Feature | Workflow A: Virtual Env + Pip Mode | Workflow B: Full Project Mode |
-| :--- | :--- | :--- |
-| **Commands** | `uv venv venv` and `uv pip install ` | `uv init` and `uv add ` |
-| **Files Created** | Only the `venv/` folder (plus `requirements.txt` if exported) | `.gitignore`, `.python-version`, `README.md`, `main.py`, `pyproject.toml`, `uv.lock` |
-| **Best For** | Fast drop-in replacement for `python -m venv` and `pip` | Reproducible projects matching the course repository layout |
+- Python version
+- Python executable path
+- Current working directory
+- Whether a virtual environment is active
+- Basic Python execution
+- Optional package imports
 
-Key concepts to remember:
-* `venv\Scripts\activate` only switches the active Python interpreter in your terminal; it does not create project files.
-* `uv init` creates `.gitignore`, `.python-version`, `README.md`, `main.py`, and `pyproject.toml` (it does not activate the environment).
-* `uv add ` updates `pyproject.toml` with your dependencies and generates `uv.lock`.
+### `1_simple_prompt_chain.py`
 
-## 3. Setup Steps Executed for langchain_projects
+Introduces a fixed LangChain workflow:
 
-Because default `uv venv` may pick the newest Python release on the system (such as Python 3.14, which can cause compatibility issues with AI/LangChain libraries), the environment is pinned to Python 3.11:
+```text
+Input data -> PromptTemplate -> Gemini -> AIMessage -> readable text
+```
 
-    :: 1. Navigate into the project folder
-    cd langchain_projects
+Main concepts:
 
-    :: 2. Create a virtual environment named 'venv' with Python 3.11
-    uv venv venv --python 3.11
+- Loading environment variables
+- Initializing Gemini through LangChain
+- Using `PromptTemplate`
+- Composing a chain with the pipe operator `|`
+- Calling a chain with `.invoke()`
+- Comparing `response.content` and `response.text`
+- Grounding the answer in supplied information
 
-    :: 3. Activate the virtual environment in Command Prompt (cmd)
-    venv\Scripts\activate
+### `2_custom_tavily_search_agent.py`
 
-    :: 4. Install core LangChain packages into the active venv
-    uv pip install langchain langchain-google-genai python-dotenv tavily-python langchain-tavily langsmith truststore
+Creates a web-search agent using a custom Tavily wrapper decorated with LangChain's `@tool`.
 
-    :: 5. Initialize project files (.gitignore, .python-version, README.md, main.py, pyproject.toml)
-    uv init --python 3.11
+Main concepts:
 
-    :: 6. Point uv project commands to the existing 'venv' folder and generate uv.lock
-    set UV_PROJECT_ENVIRONMENT=venv
-    uv add langchain langchain-google-genai python-dotenv tavily-python langchain-tavily langsmith truststore
+- Custom Python tools
+- Function docstrings and type hints
+- `TavilyClient`
+- `create_agent()`
+- Model-selected search queries
+- Repeated model and tool calls
+- Accumulated agent messages
 
-## 4. Cleanest Workflow for Future Projects
+### `3_builtin_tavily_search_agent.py`
 
-When starting a brand-new project folder from scratch, run these commands in sequence so you do not need to run `uv pip install` and `uv add` separately:
+Replaces the custom Tavily wrapper with the ready-made `TavilySearch` integration.
 
-    :: 1. Create and enter the new project directory
-    mkdir my_new_project
-    cd my_new_project
+Main concepts:
 
-    :: 2. Initialize project files with Python 3.11 (.gitignore, .python-version, README.md, main.py, pyproject.toml)
-    uv init --python 3.11
+- Custom tool versus built-in integration
+- Reduced application code
+- Reusable LangChain tools
+- Agent behavior remaining the same despite a different tool implementation
 
-    :: 3. Create and activate the virtual environment (automatically reads 3.11 from .python-version)
-    uv venv venv
-    venv\Scripts\activate
+### `4_structured_agent_output.py`
 
-    :: 4. Install packages and update pyproject.toml + uv.lock using the 'venv' folder
-    set UV_PROJECT_ENVIRONMENT=venv
-    uv add langchain langchain-google-genai python-dotenv tavily-python langchain-tavily langsmith truststore
+Uses Pydantic to require a predictable final response.
 
-    :: Optional: Export a requirements.txt file for standard pip compatibility
-    uv pip freeze > requirements.txt
+Main concepts:
 
-## 5. Selecting the Interpreter in VS Code
+- Structured versus free-form output
+- Pydantic `BaseModel`
+- `Field()` descriptions and defaults
+- Nested models such as `list[Source]`
+- `response_format`
+- Reading `result["structured_response"]`
+- Accessing validated fields directly
 
-1. Press `Ctrl + Shift + P` in VS Code.
-2. Type and select `Python: Select Interpreter`.
-3. Choose the interpreter inside your project's `venv` folder: `.\langchain_projects\venv\Scripts\python.exe`.
-4. Verify the active interpreter in your terminal:
+### `5_manual_langchain_agent_loop.py`
 
-    where python
-    python --version
+Rebuilds the model-tool loop manually while retaining LangChain abstractions.
 
-## 6. Troubleshooting & Quick Fixes
+Main concepts:
 
-Corporate Network / SSL `UnknownIssuer` Error with `uv` (pass `--native-tls` so `uv` uses the Windows certificate store):
+- `@tool`
+- `bind_tools()`
+- `AIMessage.tool_calls`
+- Tool-name-to-function mapping
+- `tool.invoke()`
+- `ToolMessage`
+- `tool_call_id`
+- Message accumulation
+- Defensive system prompting
+- Maximum-iteration safety limits
 
-    uv pip install --native-tls 
+### `6_raw_gemini_function_calling.py`
 
-Corporate SSL Certificate Error in Python Scripts (inject `truststore` at the top of your script before network imports):
+Removes LangChain's chat-model and tool-calling abstractions and uses the Google Gen AI SDK directly.
 
-    import truststore
-    truststore.inject_into_ssl()
+Main concepts:
 
-    from dotenv import load_dotenv
-    load_dotenv()
+- Manual function declarations
+- JSON/OpenAPI-style parameter schemas
+- Gemini `Content`, `Part`, `FunctionCall`, and `FunctionResponse`
+- Direct Python function execution
+- Keyword argument unpacking with `**tool_args`
+- Client-side conversation-history accumulation
+- Gemini-specific system-instruction configuration
+- Provider-specific message formats
+- Custom LangSmith input and output serialization
 
-Using Anaconda in Command Prompt (`cmd`) when `'conda' is not recognized`:
+### `7_manual_react_agent.py`
 
-    :: Option A: One-time permanent fix (run inside Anaconda Prompt, then restart terminal)
-    conda init cmd.exe
+Removes native function calling completely. Gemini sees tool descriptions only as text inside a ReAct prompt.
 
-    :: Option B: Direct activation inside standard cmd
-    call C:\Users\kumar\anaconda3\Scripts\activate.bat
+Main concepts:
+
+- ReAct structure: Thought, Action, Action Input, Observation, Final Answer
+- Dynamic tool descriptions using `inspect`
+- `inspect.signature()` and `inspect.getdoc()`
+- Accessing decorated functions through `__wrapped__`
+- Stop sequences
+- Regex parsing with `re.search()`
+- Positional argument unpacking with `*args`
+- Direct function dispatch through `tools[tool_name]`
+- Growing scratchpad history
+- Fragility of text-based tool protocols
+
+---
+
+## Agent Architecture: Three Layers
+
+The shopping example is intentionally repeated across three implementations.
+
+### Layer 1: LangChain tool calling
+
+```text
+Tool definition:       @tool
+Tool schema:           Generated by LangChain
+Model output:          AIMessage.tool_calls
+Tool result:           ToolMessage
+History:               LangChain message objects
+Tool execution:        tool.invoke(tool_args)
+```
+
+### Layer 2: Raw Gemini function calling
+
+```text
+Tool definition:       Regular Python function
+Tool schema:           Manual function declaration
+Model output:          Gemini FunctionCall
+Tool result:           Gemini FunctionResponse Part
+History:               Gemini Content objects
+Tool execution:        selected_tool(**tool_args)
+```
+
+### Layer 3: Raw ReAct prompting
+
+```text
+Tool definition:       Regular Python function
+Tool description:      Plain text inside the prompt
+Model output:          Ordinary text
+Parsing:               Regular expressions
+Tool result:           Observation text
+History:               Growing scratchpad string
+Tool execution:        selected_tool(*args)
+```
+
+The stable control flow is the same across all three layers:
+
+```text
+Ask model
+-> Identify the next action
+-> Validate and execute trusted Python code
+-> Return the observation
+-> Repeat
+-> Stop when the model produces a final answer
+```
+
+---
+
+## Prerequisites
+
+- Windows 10 or Windows 11
+- Python 3.10.20
+- Visual Studio Code
+- Git
+- Access to Google AI Studio
+- A Tavily account for the web-search examples
+- A LangSmith account for tracing
+
+The course project uses a standard Python `venv`. Jupyter can be managed separately through Anaconda if required.
+
+---
+
+## Getting Started
+
+### 1. Clone or open the repository
+
+```cmd
+git clone <repository-url>
+cd langchain-course
+```
+
+If the repository already exists locally, open the project folder in Visual Studio Code.
+
+### 2. Select a Python 3.10 interpreter
+
+If a Python 3.10 Conda environment is being used as the source interpreter:
+
+```cmd
+conda activate nlp_env
+python --version
+where python
+```
+
+Confirm that Python reports version `3.10.20` before creating the project environment.
+
+### 3. Create the project virtual environment
+
+```cmd
+python -m venv venv
+```
+
+The Python version of the new environment comes from the interpreter used to run this command.
+
+### 4. Exit the source Conda environment and activate only the project environment
+
+If the new `venv` was created while a Conda environment was active:
+
+```cmd
+venv\Scripts\activate
+deactivate
+conda deactivate
+conda deactivate
+venv\Scripts\activate
+```
+
+The final command prompt should begin with only:
+
+```text
+(venv)
+```
+
+Verify the environment:
+
+```cmd
+where python
+python --version
+python -m pip --version
+```
+
+The first Python path should end with:
+
+```text
+langchain-course\venv\Scripts\python.exe
+```
+
+### 5. Upgrade packaging tools
+
+```cmd
+python -m pip install --upgrade pip setuptools wheel
+```
+
+### 6. Install course packages
+
+Create `requirements-course.txt` with:
+
+```text
+python-dotenv
+truststore
+pydantic
+langchain
+langchain-google-genai
+langsmith
+tavily-python
+langchain-tavily
+google-genai
+```
+
+Install them:
+
+```cmd
+python -m pip install -r requirements-course.txt
+```
+
+Check dependency health:
+
+```cmd
+python -m pip check
+```
+
+Expected output:
+
+```text
+No broken requirements found.
+```
+
+### 7. Verify all important imports
+
+```cmd
+python -c "import truststore, pydantic, langchain, langsmith; from dotenv import load_dotenv; from google import genai; from google.genai import types; from langchain_google_genai import ChatGoogleGenerativeAI; from langchain_tavily import TavilySearch; from tavily import TavilyClient; print('All course imports are working')"
+```
+
+This import test does not call Gemini or Tavily and does not consume API quota.
+
+### 8. Select the new interpreter in Visual Studio Code
+
+Open the Command Palette:
+
+```text
+Ctrl + Shift + P
+```
+
+Choose:
+
+```text
+Python: Select Interpreter
+```
+
+Select:
+
+```text
+.\venv\Scripts\python.exe
+```
+
+---
+
+## Environment Check Script
+
+Create `0_environment_check.py` as an API-free smoke test:
+
+```python
+import os
+import platform
+import sys
+
+
+def main():
+    print("=" * 60)
+    print("LANGCHAIN COURSE ENVIRONMENT CHECK")
+    print("=" * 60)
+
+    print("\nHello, world!")
+    print("Python is working successfully.")
+
+    print("\nEnvironment details:")
+    print(f"Python version: {sys.version}")
+    print(f"Python executable: {sys.executable}")
+    print(f"Operating system: {platform.platform()}")
+    print(f"Current working directory: {os.getcwd()}")
+
+    print("\nVirtual environment check:")
+
+    if sys.prefix != sys.base_prefix:
+        print("Virtual environment: Active")
+        print(f"Environment location: {sys.prefix}")
+    else:
+        print("Virtual environment: Not active")
+
+    print("\nBasic Python syntax check:")
+
+    numbers = [10, 20, 30]
+    total = sum(numbers)
+
+    print(f"Numbers: {numbers}")
+    print(f"Total: {total}")
+
+    print("\n" + "=" * 60)
+    print("ENVIRONMENT CHECK COMPLETED SUCCESSFULLY")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Run it:
+
+```cmd
+python 0_environment_check.py
+```
+
+---
+
+## Configuration
+
+Create a `.env` file in the project root:
+
+```env
+GOOGLE_API_KEY=your-google-api-key
+TAVILY_API_KEY=your-tavily-api-key
+
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_API_KEY=your-langsmith-api-key
+LANGSMITH_PROJECT="Langchain Course"
+```
+
+Never put real API-key values in scripts, screenshots, notebooks, documentation, or Git commits.
+
+---
+
+## Google Gemini
+
+### Purpose
+
+Gemini is used for:
+
+- Prompt-based summarization
+- Agent reasoning
+- Tool selection
+- Native function calling
+- Final-answer generation
+
+### Dashboard and documentation
+
+- Google AI Studio: https://aistudio.google.com/
+- API keys: https://aistudio.google.com/app/apikey
+- Active rate limits: https://aistudio.google.com/rate-limit
+- Gemini API documentation: https://ai.google.dev/gemini-api/docs
+- Function calling: https://ai.google.dev/gemini-api/docs/generate-content/function-calling
+- Google Gen AI Python SDK: https://googleapis.github.io/python-genai/
+
+### Environment variable
+
+```env
+GOOGLE_API_KEY=your-google-api-key
+```
+
+### LangChain usage
+
+```python
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3.6-flash",
+    max_retries=2,
+)
+```
+
+### Raw SDK usage
+
+```python
+from google import genai
+
+client = genai.Client()
+```
+
+### Quota reminder
+
+One agent execution can make multiple Gemini requests. For example:
+
+```text
+Request 1 -> Select get_product_price
+Request 2 -> Select apply_discount
+Request 3 -> Produce the final answer
+```
+
+A single LangSmith trace can therefore contain several Gemini API requests.
+
+Common Gemini errors:
+
+```text
+429 RESOURCE_EXHAUSTED
+-> A project/model quota or rate limit was reached
+
+503 UNAVAILABLE
+-> The selected model is temporarily overloaded
+```
+
+---
+
+## Tavily
+
+### Purpose
+
+Tavily provides current web-search results to the agent.
+
+### Dashboard and documentation
+
+- Tavily dashboard: https://app.tavily.com/home
+- Tavily documentation: https://docs.tavily.com/
+
+### Environment variable
+
+```env
+TAVILY_API_KEY=your-tavily-api-key
+```
+
+### Direct SDK
+
+```python
+from tavily import TavilyClient
+
+client = TavilyClient()
+result = client.search(query="AI Engineer LangChain jobs")
+```
+
+### Built-in LangChain integration
+
+```python
+from langchain_tavily import TavilySearch
+
+search = TavilySearch(max_results=5)
+```
+
+---
+
+## LangSmith
+
+### Purpose
+
+LangSmith records and displays:
+
+- Application inputs
+- Model inputs and outputs
+- Tool requests and results
+- Errors
+- Latency
+- Token usage
+- Trace hierarchy
+
+### Dashboard and documentation
+
+- LangSmith dashboard: https://smith.langchain.com/
+- LangSmith documentation: https://docs.langchain.com/langsmith/observability
+
+### Environment variables
+
+```env
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_API_KEY=your-langsmith-api-key
+LANGSMITH_PROJECT="Langchain Course"
+```
+
+### Terminology
+
+```text
+Run
+-> One operation, such as a model call or tool execution
+
+Trace
+-> All runs belonging to one complete invocation
+
+Project
+-> A collection of related traces
+```
+
+One agent execution generally produces one top-level trace with several child runs.
+
+### Raw Gemini trace formatting
+
+Gemini returns provider-specific objects such as `Content`, `Part`, `FunctionCall`, and `FunctionResponse`. Custom `process_inputs` and `process_outputs` functions serialize these objects into a LangSmith-readable message format.
+
+The serialization layer affects tracing only. Native Gemini objects are still sent to Gemini unchanged.
+
+---
+
+## Corporate SSL Setup
+
+The corporate network may inspect HTTPS traffic using certificates trusted by Windows but not automatically trusted by Python packages.
+
+Place this code before network-client imports:
+
+```python
+import truststore
+
+truststore.inject_into_ssl()
+```
+
+Do not disable TLS verification and do not use `verify=False`.
+
+---
+
+## Running the Scripts
+
+Activate the environment first:
+
+```cmd
+venv\Scripts\activate
+```
+
+Run the environment check:
+
+```cmd
+python 0_environment_check.py
+```
+
+Run individual lessons:
+
+```cmd
+python 1_simple_prompt_chain.py
+python 2_custom_tavily_search_agent.py
+python 3_builtin_tavily_search_agent.py
+python 4_structured_agent_output.py
+python 5_manual_langchain_agent_loop.py
+python 6_raw_gemini_function_calling.py
+python 7_manual_react_agent.py
+```
+
+Scripts that call agents may consume multiple Gemini requests in one execution.
+
+---
+
+## Package Management
+
+### Human-maintained requirements
+
+`requirements-course.txt` contains only intentionally selected top-level packages.
+
+### Exact environment snapshot
+
+After the environment is confirmed healthy:
+
+```cmd
+python -m pip freeze > requirements-lock.txt
+```
+
+Use `requirements-lock.txt` to reproduce the exact installed versions:
+
+```cmd
+python -m pip install -r requirements-lock.txt
+```
+
+Check environment consistency:
+
+```cmd
+python -m pip check
+```
+
+---
+
+## Git Workflow
+
+Check changes:
+
+```cmd
+git status
+```
+
+Review unstaged changes:
+
+```cmd
+git diff
+```
+
+Stage selected files:
+
+```cmd
+git add README.md requirements-course.txt 0_environment_check.py
+```
+
+Stage all intended changes:
+
+```cmd
+git add .
+```
+
+Review staged changes:
+
+```cmd
+git diff --staged
+```
+
+Commit:
+
+```cmd
+git commit -m "Document course setup and agent learning path"
+```
+
+View current-branch history:
+
+```cmd
+git log --oneline --graph --decorate
+```
+
+---
+
+## Security
+
+The `.gitignore` file should include:
+
+```gitignore
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.vscode/
+```
+
+Security rules:
+
+- Never commit `.env`
+- Never paste real API keys into code
+- Never include secrets in screenshots
+- Revoke and recreate an exposed key
+- Use public or synthetic data during personal learning
+- Do not disable certificate verification
+
+---
+
+## Troubleshooting
+
+### `ModuleNotFoundError`
+
+Confirm the project environment:
+
+```cmd
+where python
+python -m pip --version
+```
+
+Then install the missing top-level dependency or reinstall the course requirements:
+
+```cmd
+python -m pip install -r requirements-course.txt
+```
+
+### Wrong Python interpreter
+
+The first result from `where python` should be:
+
+```text
+...\langchain-course\venv\Scripts\python.exe
+```
+
+If not:
+
+```cmd
+venv\Scripts\activate
+```
+
+Then reselect the interpreter in Visual Studio Code.
+
+### SSL certificate verification failure
+
+Confirm that `truststore.inject_into_ssl()` runs before libraries that create network clients.
+
+### Gemini `429 RESOURCE_EXHAUSTED`
+
+Check the active project and model limits in Google AI Studio. Wait for the relevant reset or switch to another eligible model with available quota.
+
+### Gemini `503 UNAVAILABLE`
+
+The selected model is temporarily overloaded. Wait and retry with a bounded backoff strategy.
+
+### LangSmith shows blank or `Unknown` messages
+
+Raw Gemini objects may need custom input and output serialization for chat-style rendering.
+
+### `Part.from_function_response()` rejects `id`
+
+For the installed Google Gen AI SDK used by this project, call:
+
+```python
+types.Part.from_function_response(
+    name=tool_name,
+    response={"result": observation},
+)
+```
+
+### ReAct tool-dispatch error
+
+Correct dynamic dispatch:
+
+```python
+selected_tool = tools[tool_name]
+observation = selected_tool(*args)
+```
+
+`tools * args` is multiplication and is incorrect.
+
+---
+
+## Key Takeaway
+
+An agent is not only an LLM. An agent combines:
+
+```text
+Model
++ Available actions
++ Execution loop
++ State or history
++ Validation
++ Stopping condition
++ Safety controls
+```
+
+The model proposes an action and arguments. The Python application validates the request, executes trusted code, captures the result, and returns the observation to the model.
