@@ -4,11 +4,12 @@ truststore.inject_into_ssl()
 
 from pathlib import Path
 
-ENV_PATH = Path("../../langchain-course/.env").resolve()
+# ENV_PATH = Path("../../.env").resolve()
 
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=ENV_PATH)
+# load_dotenv(dotenv_path=ENV_PATH)
+load_dotenv()
 
 import asyncio
 import os

@@ -1,4 +1,5 @@
 import truststore
+
 truststore.inject_into_ssl()
 
 from dotenv import load_dotenv
@@ -47,13 +48,12 @@ Musk is a supporter of global far-right politics, figures, and political parties
 
     chain = summary_prompt_template | llm
 
-    response = chain.invoke(
-        input={"information": information}
-    )
+    response = chain.invoke(input={"information": information})
 
     print(response.content)
     print("--------------------------------------------------")
     print(response.text)
+
 
 if __name__ == "__main__":
     main()

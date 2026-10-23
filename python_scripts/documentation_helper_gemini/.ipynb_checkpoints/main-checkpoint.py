@@ -4,8 +4,9 @@ truststore.inject_into_ssl()
 
 from pathlib import Path
 
+# .env is stored two folders prior to this script's folder. Therefore we are using ../../.env in path below
 ENV_PATH = Path(
-    "../../langchain-course/.env"
+    "../../.env"
 ).resolve()
 
 from dotenv import load_dotenv

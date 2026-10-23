@@ -1,7 +1,8 @@
 import os
 import platform
 import sys
-
+from dotenv import load_dotenv
+load_dotenv()
 
 def main():
     print("=" * 60)
@@ -25,6 +26,12 @@ def main():
         print(f"Environment location: {sys.prefix}")
     else:
         print("Virtual environment: Not active")
+
+    print("\n .env loading check:")
+    print("Google key loaded:", bool(os.getenv("GOOGLE_API_KEY")))
+    print("Tavily key loaded:", bool(os.getenv("TAVILY_API_KEY")))
+    print("LangSmith key loaded:", bool(os.getenv("LANGSMITH_API_KEY")))
+    print("Pinecone key loaded:", bool(os.getenv("PINECONE_API_KEY")))
 
     print("\nBasic Python syntax check:")
 
